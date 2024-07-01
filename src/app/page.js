@@ -145,6 +145,12 @@ export default function Home() {
     }));
   };
 
+  // Calculate percentage
+  const calculatePercentage = (current, initial) => {
+    if (initial === 0) return 0;
+    return ((initial - current) / initial) * 100;
+  };
+
   // Handle reset
   const handleReset = async () => {
     if (userId) {
@@ -265,6 +271,7 @@ export default function Home() {
               ) : (
                 <span onClick={() => handleClickToEdit('newEntries')}>{currentGoals.newEntries}</span>
               )}
+              <span>（{calculatePercentage(currentGoals.newEntries, initialGoals.newEntries).toFixed(2)}%）</span>
             </h2>
             <select name="newEntries" onChange={handleDecrementValueChange} value={decrementValues.newEntries}>
               {[...Array(21).keys()].map((i) => (
@@ -289,6 +296,7 @@ export default function Home() {
               ) : (
                 <span onClick={() => handleClickToEdit('auUQPoints')}>{currentGoals.auUQPoints}</span>
               )}
+              <span>（{calculatePercentage(currentGoals.auUQPoints, initialGoals.auUQPoints).toFixed(2)}%）</span>
             </h2>
             <select name="auUQPoints" onChange={handleDecrementValueChange} value={decrementValues.auUQPoints}>
               <option value={1}>1pt</option>
@@ -313,6 +321,7 @@ export default function Home() {
               ) : (
                 <span onClick={() => handleClickToEdit('serpa')}>{currentGoals.serpa}</span>
               )}
+              <span>（{calculatePercentage(currentGoals.serpa, initialGoals.serpa).toFixed(2)}%）</span>
             </h2>
             <select name="serpa" onChange={handleDecrementValueChange} value={decrementValues.serpa}>
               {[...Array(21).keys()].map((i) => (
@@ -337,6 +346,7 @@ export default function Home() {
               ) : (
                 <span onClick={() => handleClickToEdit('saison')}>{currentGoals.saison}</span>
               )}
+              <span>（{calculatePercentage(currentGoals.saison, initialGoals.saison).toFixed(2)}%）</span>
             </h2>
             <select name="saison" onChange={handleDecrementValueChange} value={decrementValues.saison}>
               {[...Array(21).keys()].map((i) => (
@@ -361,6 +371,7 @@ export default function Home() {
               ) : (
                 <span onClick={() => handleClickToEdit('souhan')}>{currentGoals.souhan}</span>
               )}
+              <span>（{calculatePercentage(currentGoals.souhan, initialGoals.souhan).toFixed(2)}%）</span>
             </h2>
             <select name="souhan" onChange={handleDecrementValueChange} value={decrementValues.souhan}>
               {[...Array(21).keys()].map((i) => (
