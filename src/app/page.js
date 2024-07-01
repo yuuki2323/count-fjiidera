@@ -1,113 +1,377 @@
-import Image from "next/image";
+"use client"
+import { useState, useEffect } from 'react';
+import { db } from '../../firebaseConfig';
+import { collection, addDoc, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 
 export default function Home() {
+  const [initialGoals, setInitialGoals] = useState({
+    newEntries: 0,
+    auUQPoints: 0,
+    serpa: 0,
+    saison: 0,
+    souhan: 0,
+  });
+  const [currentGoals, setCurrentGoals] = useState({
+    newEntries: 0,
+    auUQPoints: 0,
+    serpa: 0,
+    saison: 0,
+    souhan: 0,
+  });
+  const [decrementValues, setDecrementValues] = useState({
+    newEntries: 0,
+    auUQPoints: 0,
+    serpa: 0,
+    saison: 0,
+    souhan: 0,
+  });
+  const [editMode, setEditMode] = useState({
+    newEntries: false,
+    auUQPoints: false,
+    serpa: false,
+    saison: false,
+    souhan: false,
+  });
+  const [editValues, setEditValues] = useState({
+    newEntries: 0,
+    auUQPoints: 0,
+    serpa: 0,
+    saison: 0,
+    souhan: 0,
+  });
+  const [userId, setUserId] = useState(null);
+  const [isInitialSet, setIsInitialSet] = useState(false);
+
+  // Fetch user data from Firestore
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const querySnapshot = await getDocs(collection(db, 'users'));
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        setInitialGoals(data.initialGoals);
+        setCurrentGoals(data.currentGoals);
+        setEditValues(data.currentGoals); // initialize edit values
+        setUserId(doc.id);
+        setIsInitialSet(true);
+      });
+    };
+
+    fetchUserData();
+  }, []);
+
+  // Handle initial goals change
+  const handleInitialGoalsChange = (event) => {
+    const { name, value } = event.target;
+    setInitialGoals((prev) => ({
+      ...prev,
+      [name]: Number(value),
+    }));
+  };
+
+  // Handle setting initial goals
+  const handleSetInitialGoals = async () => {
+    setCurrentGoals(initialGoals);
+    const docRef = await addDoc(collection(db, 'users'), {
+      initialGoals: initialGoals,
+      currentGoals: initialGoals,
+    });
+    setUserId(docRef.id);
+    setIsInitialSet(true);
+  };
+
+  // Handle decrement value change
+  const handleDecrementValueChange = (event) => {
+    const { name, value } = event.target;
+    setDecrementValues((prev) => ({
+      ...prev,
+      [name]: Number(value),
+    }));
+  };
+
+  // Handle decrement
+  const handleDecrement = async (name) => {
+    const decrementValue = decrementValues[name];
+    setCurrentGoals((prev) => {
+      const newValue = prev[name] > decrementValue ? prev[name] - decrementValue : 0;
+      return { ...prev, [name]: newValue };
+    });
+    if (userId) {
+      const userDoc = doc(db, 'users', userId);
+      await updateDoc(userDoc, {
+        currentGoals: {
+          ...currentGoals,
+          [name]: currentGoals[name] > decrementValue ? currentGoals[name] - decrementValue : 0,
+        },
+      });
+    }
+  };
+
+  // Handle edit value change
+  const handleEditValueChange = (event) => {
+    const { name, value } = event.target;
+    setEditValues((prev) => ({
+      ...prev,
+      [name]: Number(value),
+    }));
+  };
+
+  // Handle edit confirmation
+  const handleEditConfirm = async (name) => {
+    const editValue = editValues[name];
+    setCurrentGoals((prev) => ({
+      ...prev,
+      [name]: editValue,
+    }));
+    if (userId) {
+      const userDoc = doc(db, 'users', userId);
+      await updateDoc(userDoc, {
+        currentGoals: {
+          ...currentGoals,
+          [name]: editValue,
+        },
+      });
+    }
+    setEditMode((prev) => ({
+      ...prev,
+      [name]: false,
+    }));
+  };
+
+  // Handle click to edit
+  const handleClickToEdit = (name) => {
+    setEditMode((prev) => ({
+      ...prev,
+      [name]: true,
+    }));
+  };
+
+  // Handle reset
+  const handleReset = async () => {
+    if (userId) {
+      await deleteDoc(doc(db, 'users', userId));
+      setInitialGoals({
+        newEntries: 0,
+        auUQPoints: 0,
+        serpa: 0,
+        saison: 0,
+        souhan: 0,
+      });
+      setCurrentGoals({
+        newEntries: 0,
+        auUQPoints: 0,
+        serpa: 0,
+        saison: 0,
+        souhan: 0,
+      });
+      setDecrementValues({
+        newEntries: 0,
+        auUQPoints: 0,
+        serpa: 0,
+        saison: 0,
+        souhan: 0,
+      });
+      setEditValues({
+        newEntries: 0,
+        auUQPoints: 0,
+        serpa: 0,
+        saison: 0,
+        souhan: 0,
+      });
+      setEditMode({
+        newEntries: false,
+        auUQPoints: false,
+        serpa: false,
+        saison: false,
+        souhan: false,
+      });
+      setUserId(null);
+      setIsInitialSet(false);
+    }
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.js</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
+    <div style={{ textAlign: 'center', marginTop: '50px' }}>
+      {!isInitialSet ? (
+        <div>
+          <h1>目標を設定してください</h1>
+          <div className='mb-4'>
+            <label>新規:</label>
+            <input
+              type="number"
+              name="newEntries"
+              value={initialGoals.newEntries}
+              onChange={handleInitialGoalsChange}
+              className='border ml-2 rounded-sm'
             />
-          </a>
+          </div>
+          <div className='mb-4'>
+            <label>au/UQポイント:</label>
+            <input
+              type="number"
+              name="auUQPoints"
+              value={initialGoals.auUQPoints}
+              onChange={handleInitialGoalsChange}
+              className='border ml-2 rounded-sm'
+            />
+          </div>
+          <div className='mb-4'>
+            <label>セルパ:</label>
+            <input
+              type="number"
+              name="serpa"
+              value={initialGoals.serpa}
+              onChange={handleInitialGoalsChange}
+              className='border ml-2 rounded-sm'
+            />
+          </div>
+          <div className='mb-4'>
+            <label>セゾン:</label>
+            <input
+              type="number"
+              name="saison"
+              value={initialGoals.saison}
+              onChange={handleInitialGoalsChange}
+              className='border ml-2 rounded-sm'
+            />
+          </div>
+          <div className='mb-4'>
+            <label>総販:</label>
+            <input
+              type="number"
+              name="souhan"
+              value={initialGoals.souhan}
+              onChange={handleInitialGoalsChange}
+              className='border ml-2 rounded-sm'
+            />
+          </div>
+          <button onClick={handleSetInitialGoals} className='border py-2 px-4 rounded'>設定</button>
         </div>
-      </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-full sm:before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full sm:after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800 hover:dark:bg-opacity-30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-balance`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+      ) : (
+        <div>
+          <h1 className='mb-4'>目標ポイントの残数</h1>
+          <div className='mb-3'>
+            <h2 className='mb-1'>新規: 
+              {editMode.newEntries ? (
+                <span>
+                  <input
+                    type="number"
+                    name="newEntries"
+                    value={editValues.newEntries}
+                    onChange={handleEditValueChange}
+                    className='border ml-2 rounded-sm'
+                  />
+                  <button onClick={() => handleEditConfirm('newEntries')} className='ml-2 border py-1 px-2 rounded'>修正</button>
+                </span>
+              ) : (
+                <span onClick={() => handleClickToEdit('newEntries')}>{currentGoals.newEntries}</span>
+              )}
+            </h2>
+            <select name="newEntries" onChange={handleDecrementValueChange} value={decrementValues.newEntries}>
+              {[...Array(21).keys()].map((i) => (
+                <option key={i} value={i}>{i}</option>
+              ))}
+            </select>
+            <button onClick={() => handleDecrement('newEntries')} className='ml-2 border py-1 px-2 rounded'>確定</button>
+          </div>
+          <div className='mb-3'>
+            <h2 className='mb-1'>au/UQポイント: 
+              {editMode.auUQPoints ? (
+                <span>
+                  <input
+                    type="number"
+                    name="auUQPoints"
+                    value={editValues.auUQPoints}
+                    onChange={handleEditValueChange}
+                    className='border ml-2 rounded-sm'
+                  />
+                  <button onClick={() => handleEditConfirm('auUQPoints')} className='ml-2 border py-1 px-2 rounded'>修正</button>
+                </span>
+              ) : (
+                <span onClick={() => handleClickToEdit('auUQPoints')}>{currentGoals.auUQPoints}</span>
+              )}
+            </h2>
+            <select name="auUQPoints" onChange={handleDecrementValueChange} value={decrementValues.auUQPoints}>
+              <option value={1}>1pt</option>
+              <option value={4}>4pt</option>
+              <option value={5}>5pt</option>
+            </select>
+            <button onClick={() => handleDecrement('auUQPoints')} className='ml-2 border py-1 px-2 rounded'>確定</button>
+          </div>
+          <div className='mb-3'>
+            <h2 className='mb-1'>セルパ: 
+              {editMode.serpa ? (
+                <span>
+                  <input
+                    type="number"
+                    name="serpa"
+                    value={editValues.serpa}
+                    onChange={handleEditValueChange}
+                    className='border ml-2 rounded-sm'
+                  />
+                  <button onClick={() => handleEditConfirm('serpa')} className='ml-2 border py-1 px-2 rounded'>修正</button>
+                </span>
+              ) : (
+                <span onClick={() => handleClickToEdit('serpa')}>{currentGoals.serpa}</span>
+              )}
+            </h2>
+            <select name="serpa" onChange={handleDecrementValueChange} value={decrementValues.serpa}>
+              {[...Array(21).keys()].map((i) => (
+                <option key={i} value={i}>{i}</option>
+              ))}
+            </select>
+            <button onClick={() => handleDecrement('serpa')} className='ml-2 border py-1 px-2 rounded'>確定</button>
+          </div>
+          <div className='mb-3'>
+            <h2 className='mb-1'>セゾン: 
+              {editMode.saison ? (
+                <span>
+                  <input
+                    type="number"
+                    name="saison"
+                    value={editValues.saison}
+                    onChange={handleEditValueChange}
+                    className='border ml-2 rounded-sm'
+                  />
+                  <button onClick={() => handleEditConfirm('saison')} className='ml-2 border py-1 px-2 rounded'>修正</button>
+                </span>
+              ) : (
+                <span onClick={() => handleClickToEdit('saison')}>{currentGoals.saison}</span>
+              )}
+            </h2>
+            <select name="saison" onChange={handleDecrementValueChange} value={decrementValues.saison}>
+              {[...Array(21).keys()].map((i) => (
+                <option key={i} value={i}>{i}</option>
+              ))}
+            </select>
+            <button onClick={() => handleDecrement('saison')} className='ml-2 border py-1 px-2 rounded'>確定</button>
+          </div>
+          <div className='mb-3'>
+            <h2 className='mb-1'>総販: 
+              {editMode.souhan ? (
+                <span>
+                  <input
+                    type="number"
+                    name="souhan"
+                    value={editValues.souhan}
+                    onChange={handleEditValueChange}
+                    className='border ml-2 rounded-sm'
+                  />
+                  <button onClick={() => handleEditConfirm('souhan')} className='ml-2 border py-1 px-2 rounded'>修正</button>
+                </span>
+              ) : (
+                <span onClick={() => handleClickToEdit('souhan')}>{currentGoals.souhan}</span>
+              )}
+            </h2>
+            <select name="souhan" onChange={handleDecrementValueChange} value={decrementValues.souhan}>
+              {[...Array(21).keys()].map((i) => (
+                <option key={i} value={i}>{i}</option>
+              ))}
+            </select>
+            <button onClick={() => handleDecrement('souhan')} className='ml-2 border py-1 px-2 rounded'>確定</button>
+          </div>
+          <button onClick={handleReset} className='border rounded py-1 px-2'>リセット</button>
+        </div>
+      )}
+    </div>
   );
 }
