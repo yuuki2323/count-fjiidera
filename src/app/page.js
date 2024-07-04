@@ -41,6 +41,13 @@ export default function Home() {
   });
   const [userId, setUserId] = useState(null);
   const [isInitialSet, setIsInitialSet] = useState(false);
+  const [history, setHistory] = useState({
+    newEntries: [],
+    auUQPoints: [],
+    serpa: [],
+    saison: [],
+    souhan: [],
+  });
 
   // Fetch user data from Firestore
   useEffect(() => {
@@ -91,18 +98,18 @@ export default function Home() {
   // Handle decrement
   const handleDecrement = async (name) => {
     const decrementValue = decrementValues[name];
-    setCurrentGoals((prev) => {
-      const newValue = prev[name] > decrementValue ? prev[name] - decrementValue : 0;
-      return { ...prev, [name]: newValue };
-    });
+    const newGoals = { ...currentGoals, [name]: currentGoals[name] > decrementValue ? currentGoals[name] - decrementValue : 0 };
+    
+    setHistory((prev) => ({
+      ...prev,
+      [name]: [...prev[name], currentGoals[name]], // Save current value before decrement
+    }));
+    
+    setCurrentGoals(newGoals);
+    
     if (userId) {
       const userDoc = doc(db, 'users', userId);
-      await updateDoc(userDoc, {
-        currentGoals: {
-          ...currentGoals,
-          [name]: currentGoals[name] > decrementValue ? currentGoals[name] - decrementValue : 0,
-        },
-      });
+      await updateDoc(userDoc, { currentGoals: newGoals });
     }
   };
 
@@ -118,18 +125,18 @@ export default function Home() {
   // Handle edit confirmation
   const handleEditConfirm = async (name) => {
     const editValue = editValues[name];
-    setCurrentGoals((prev) => ({
+    const newGoals = { ...currentGoals, [name]: editValue };
+
+    setHistory((prev) => ({
       ...prev,
-      [name]: editValue,
+      [name]: [...prev[name], currentGoals[name]], // Save current value before edit
     }));
+
+    setCurrentGoals(newGoals);
+
     if (userId) {
       const userDoc = doc(db, 'users', userId);
-      await updateDoc(userDoc, {
-        currentGoals: {
-          ...currentGoals,
-          [name]: editValue,
-        },
-      });
+      await updateDoc(userDoc, { currentGoals: newGoals });
     }
     setEditMode((prev) => ({
       ...prev,
@@ -195,6 +202,20 @@ export default function Home() {
     }
   };
 
+  // Handle undo last change
+  const handleUndo = (name) => {
+    const lastValue = history[name].pop();
+    if (lastValue !== undefined) {
+      const newGoals = { ...currentGoals, [name]: lastValue };
+      setCurrentGoals(newGoals);
+
+      if (userId) {
+        const userDoc = doc(db, 'users', userId);
+        updateDoc(userDoc, { currentGoals: newGoals });
+      }
+    }
+  };
+
   return (
     <div style={{ textAlign: 'center', marginTop: '50px' }}>
       {!isInitialSet ? (
@@ -255,131 +276,42 @@ export default function Home() {
       ) : (
         <div>
           <h1 className='mb-4'>目標ポイントの残数</h1>
-          <div className='mb-3'>
-            <h2 className='mb-1'>新規: 
-              {editMode.newEntries ? (
-                <span>
-                  <input
-                    type="number"
-                    name="newEntries"
-                    value={editValues.newEntries}
-                    onChange={handleEditValueChange}
-                    className='border ml-2 rounded-sm'
-                  />
-                  <button onClick={() => handleEditConfirm('newEntries')} className='ml-2 border py-1 px-2 rounded'>修正</button>
-                </span>
-              ) : (
-                <span onClick={() => handleClickToEdit('newEntries')}>{currentGoals.newEntries}</span>
-              )}
-              <span>（{calculatePercentage(currentGoals.newEntries, initialGoals.newEntries).toFixed(2)}%）</span>
-            </h2>
-            <select name="newEntries" onChange={handleDecrementValueChange} value={decrementValues.newEntries}>
-              {[...Array(21).keys()].map((i) => (
-                <option key={i} value={i}>{i}</option>
-              ))}
-            </select>
-            <button onClick={() => handleDecrement('newEntries')} className='ml-2 border py-1 px-2 rounded'>確定</button>
-          </div>
-          <div className='mb-3'>
-            <h2 className='mb-1'>au/UQポイント: 
-              {editMode.auUQPoints ? (
-                <span>
-                  <input
-                    type="number"
-                    name="auUQPoints"
-                    value={editValues.auUQPoints}
-                    onChange={handleEditValueChange}
-                    className='border ml-2 rounded-sm'
-                  />
-                  <button onClick={() => handleEditConfirm('auUQPoints')} className='ml-2 border py-1 px-2 rounded'>修正</button>
-                </span>
-              ) : (
-                <span onClick={() => handleClickToEdit('auUQPoints')}>{currentGoals.auUQPoints}</span>
-              )}
-              <span>（{calculatePercentage(currentGoals.auUQPoints, initialGoals.auUQPoints).toFixed(2)}%）</span>
-            </h2>
-            <select name="auUQPoints" onChange={handleDecrementValueChange} value={decrementValues.auUQPoints}>
-              <option value={1}>1pt</option>
-              <option value={4}>4pt</option>
-              <option value={5}>5pt</option>
-            </select>
-            <button onClick={() => handleDecrement('auUQPoints')} className='ml-2 border py-1 px-2 rounded'>確定</button>
-          </div>
-          <div className='mb-3'>
-            <h2 className='mb-1'>セルパ: 
-              {editMode.serpa ? (
-                <span>
-                  <input
-                    type="number"
-                    name="serpa"
-                    value={editValues.serpa}
-                    onChange={handleEditValueChange}
-                    className='border ml-2 rounded-sm'
-                  />
-                  <button onClick={() => handleEditConfirm('serpa')} className='ml-2 border py-1 px-2 rounded'>修正</button>
-                </span>
-              ) : (
-                <span onClick={() => handleClickToEdit('serpa')}>{currentGoals.serpa}</span>
-              )}
-              <span>（{calculatePercentage(currentGoals.serpa, initialGoals.serpa).toFixed(2)}%）</span>
-            </h2>
-            <select name="serpa" onChange={handleDecrementValueChange} value={decrementValues.serpa}>
-              {[...Array(21).keys()].map((i) => (
-                <option key={i} value={i}>{i}</option>
-              ))}
-            </select>
-            <button onClick={() => handleDecrement('serpa')} className='ml-2 border py-1 px-2 rounded'>確定</button>
-          </div>
-          <div className='mb-3'>
-            <h2 className='mb-1'>セゾン: 
-              {editMode.saison ? (
-                <span>
-                  <input
-                    type="number"
-                    name="saison"
-                    value={editValues.saison}
-                    onChange={handleEditValueChange}
-                    className='border ml-2 rounded-sm'
-                  />
-                  <button onClick={() => handleEditConfirm('saison')} className='ml-2 border py-1 px-2 rounded'>修正</button>
-                </span>
-              ) : (
-                <span onClick={() => handleClickToEdit('saison')}>{currentGoals.saison}</span>
-              )}
-              <span>（{calculatePercentage(currentGoals.saison, initialGoals.saison).toFixed(2)}%）</span>
-            </h2>
-            <select name="saison" onChange={handleDecrementValueChange} value={decrementValues.saison}>
-              {[...Array(21).keys()].map((i) => (
-                <option key={i} value={i}>{i}</option>
-              ))}
-            </select>
-            <button onClick={() => handleDecrement('saison')} className='ml-2 border py-1 px-2 rounded'>確定</button>
-          </div>
-          <div className='mb-3'>
-            <h2 className='mb-1'>総販: 
-              {editMode.souhan ? (
-                <span>
-                  <input
-                    type="number"
-                    name="souhan"
-                    value={editValues.souhan}
-                    onChange={handleEditValueChange}
-                    className='border ml-2 rounded-sm'
-                  />
-                  <button onClick={() => handleEditConfirm('souhan')} className='ml-2 border py-1 px-2 rounded'>修正</button>
-                </span>
-              ) : (
-                <span onClick={() => handleClickToEdit('souhan')}>{currentGoals.souhan}</span>
-              )}
-              <span>（{calculatePercentage(currentGoals.souhan, initialGoals.souhan).toFixed(2)}%）</span>
-            </h2>
-            <select name="souhan" onChange={handleDecrementValueChange} value={decrementValues.souhan}>
-              {[...Array(21).keys()].map((i) => (
-                <option key={i} value={i}>{i}</option>
-              ))}
-            </select>
-            <button onClick={() => handleDecrement('souhan')} className='ml-2 border py-1 px-2 rounded'>確定</button>
-          </div>
+          {['newEntries', 'auUQPoints', 'serpa', 'saison', 'souhan'].map((goal) => (
+            <div className='mb-3' key={goal}>
+              <h2 className='mb-1'>
+                {goal === 'newEntries' && '新規'}
+                {goal === 'auUQPoints' && 'au/UQポイント'}
+                {goal === 'serpa' && 'セルパ'}
+                {goal === 'saison' && 'セゾン'}
+                {goal === 'souhan' && '総販'}
+                : 
+                {editMode[goal] ? (
+                  <span>
+                    <input
+                      type="number"
+                      name={goal}
+                      value={editValues[goal]}
+                      onChange={handleEditValueChange}
+                      className='border ml-2 rounded-sm'
+                    />
+                    <button onClick={() => handleEditConfirm(goal)} className='ml-2 border py-1 px-2 rounded'>修正</button>
+                  </span>
+                ) : (
+                  <span onClick={() => handleClickToEdit(goal)}>
+                    {currentGoals[goal]} / {initialGoals[goal]}
+                  </span>
+                )}
+                <span>（{calculatePercentage(currentGoals[goal], initialGoals[goal]).toFixed(2)}%）</span>
+              </h2>
+              <select name={goal} onChange={handleDecrementValueChange} value={decrementValues[goal]}>
+                {[...Array(21).keys()].map((i) => (
+                  <option key={i} value={i}>{i}</option>
+                ))}
+              </select>
+              <button onClick={() => handleDecrement(goal)} className='ml-2 border py-1 px-2 rounded'>確定</button>
+              <button onClick={() => handleUndo(goal)} className='ml-2 border py-1 px-2 rounded'>元に戻す</button>
+            </div>
+          ))}
           <button onClick={handleReset} className='border rounded py-1 px-2'>リセット</button>
         </div>
       )}
