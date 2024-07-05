@@ -91,39 +91,38 @@ export default function Home() {
     fetchUserData();
   }, []);
 
-  // Load today's goals from localStorage
-  useEffect(() => {
-    const storedTodayGoals = JSON.parse(localStorage.getItem('todayGoals'));
-    if (storedTodayGoals) {
-      setTodayGoals(storedTodayGoals);
+  const saveTodayGoalsToFirebase = async (newTodayGoals) => {
+    if (userId) {
+      const userDoc = doc(db, 'users', userId);
+      await updateDoc(userDoc, { todayGoals: newTodayGoals });
     }
-  }, []);
+  };
+  
+// Load today's goals from Firebase
+useEffect(() => {
+  const fetchTodayGoals = async () => {
+    if (userId) {
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        if (data.todayGoals) {
+          setTodayGoals(data.todayGoals);
+        }
+      }
+    }
+  };
+  
+  fetchTodayGoals();
+}, [userId]);
 
-  // Save today's goals to localStorage
-  useEffect(() => {
-    localStorage.setItem('todayGoals', JSON.stringify(todayGoals));
-  }, [todayGoals]);
+// Save today's goals to Firebase
+useEffect(() => {
+  saveTodayGoalsToFirebase(todayGoals);
+}, [todayGoals]);
 
-  // Reset today's goals at midnight
-  useEffect(() => {
-    const now = new Date();
-    const nextDay = new Date();
-    nextDay.setDate(now.getDate() + 1);
-    nextDay.setHours(0, 0, 0, 0);
 
-    const timeout = nextDay - now;
-    const timer = setTimeout(() => {
-      setTodayGoals({
-        newEntries: 0,
-        auUQPoints: 0,
-        serpa: 0,
-        saison: 0,
-        souhan: 0,
-      });
-    }, timeout);
 
-    return () => clearTimeout(timer);
-  }, []);
+
 
   // Handle initial goals change
   const handleInitialGoalsChange = (event) => {
