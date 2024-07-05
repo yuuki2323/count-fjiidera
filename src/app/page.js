@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect } from 'react';
 import { db } from '../../firebaseConfig';
-import { collection, addDoc, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, updateDoc, doc, deleteDoc, getDoc } from 'firebase/firestore';
 import Loader from './components/Loader';
 
 export default function Home() {
@@ -91,38 +91,38 @@ export default function Home() {
     fetchUserData();
   }, []);
 
-  const saveTodayGoalsToFirebase = async (newTodayGoals) => {
-    if (userId) {
-      const userDoc = doc(db, 'users', userId);
-      await updateDoc(userDoc, { todayGoals: newTodayGoals });
-    }
-  };
-  
-// Load today's goals from Firebase
-useEffect(() => {
-  const fetchTodayGoals = async () => {
-    if (userId) {
-      const userDoc = await getDoc(doc(db, 'users', userId));
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        if (data.todayGoals) {
-          setTodayGoals(data.todayGoals);
+  // Load today's goals from Firebase
+  useEffect(() => {
+    const fetchTodayGoals = async () => {
+      if (userId) {
+        const userDoc = await getDoc(doc(db, 'users', userId));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          if (data.todayGoals) {
+            setTodayGoals(data.todayGoals);
+          }
         }
       }
+    };
+
+    if (userId) {
+      fetchTodayGoals();
     }
-  };
-  
-  fetchTodayGoals();
-}, [userId]);
+  }, [userId]);
 
-// Save today's goals to Firebase
-useEffect(() => {
-  saveTodayGoalsToFirebase(todayGoals);
-}, [todayGoals]);
+  // Save today's goals to Firebase
+  useEffect(() => {
+    const saveTodayGoalsToFirebase = async (newTodayGoals) => {
+      if (userId) {
+        const userDoc = doc(db, 'users', userId);
+        await updateDoc(userDoc, { todayGoals: newTodayGoals });
+      }
+    };
 
-
-
-
+    if (userId) {
+      saveTodayGoalsToFirebase(todayGoals);
+    }
+  }, [todayGoals, userId]);
 
   // Handle initial goals change
   const handleInitialGoalsChange = (event) => {
@@ -139,6 +139,13 @@ useEffect(() => {
     const docRef = await addDoc(collection(db, 'users'), {
       initialGoals: initialGoals,
       currentGoals: initialGoals,
+      todayGoals: {
+        newEntries: 0,
+        auUQPoints: 0,
+        serpa: 0,
+        saison: 0,
+        souhan: 0,
+      },
     });
     setUserId(docRef.id);
     setIsInitialSet(true);
