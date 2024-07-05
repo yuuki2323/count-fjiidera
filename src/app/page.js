@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { db } from '../../firebaseConfig';
 import { collection, addDoc, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import Loader from './components/Loader';
 
 export default function Home() {
   const [initialGoals, setInitialGoals] = useState({
@@ -69,10 +70,12 @@ export default function Home() {
     saison: [],
     souhan: [],
   });
+  const [loading, setLoading] = useState(true);
 
   // Fetch user data from Firestore
   useEffect(() => {
     const fetchUserData = async () => {
+      setLoading(true);
       const querySnapshot = await getDocs(collection(db, 'users'));
       querySnapshot.forEach((doc) => {
         const data = doc.data();
@@ -82,6 +85,7 @@ export default function Home() {
         setUserId(doc.id);
         setIsInitialSet(true);
       });
+      setLoading(false);
     };
 
     fetchUserData();
@@ -326,6 +330,10 @@ export default function Home() {
       }
     }
   };
+
+  if (loading) {
+    return <Loader />;
+  }
 
   return (
     <div className="text-center mt-12">
