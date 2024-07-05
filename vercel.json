@@ -1,0 +1,6 @@
+{
+  "crons": [{
+    "path": "/api/resetTodayGoals",
+    "schedule": "0 15 * * *"
+  }]
+}
