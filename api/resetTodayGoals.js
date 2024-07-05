@@ -2,11 +2,16 @@ import { NextResponse } from 'next/server';
 import admin from 'firebase-admin';
 
 if (!admin.apps.length) {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  try {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
+  } catch (error) {
+    console.error('Error parsing FIREBASE_SERVICE_ACCOUNT:', error);
+    throw new Error('Invalid FIREBASE_SERVICE_ACCOUNT environment variable');
+  }
 }
 
 const db = admin.firestore();
