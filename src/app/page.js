@@ -19,13 +19,7 @@ export default function Home() {
     saison: 0,
     souhan: 0,
   });
-  const [todayGoals, setTodayGoals] = useState({
-    newEntries: 0,
-    auUQPoints: 0,
-    serpa: 0,
-    saison: 0,
-    souhan: 0,
-  });
+  const [todayGoals, setTodayGoals] = useState(null); // 初期値をnullに変更
   const [decrementValues, setDecrementValues] = useState({
     newEntries: 0,
     auUQPoints: 0,
@@ -102,6 +96,14 @@ export default function Home() {
           console.log('Fetched todayGoals from Firebase:', data.todayGoals); // ログを追加
           if (data.todayGoals) {
             setTodayGoals(data.todayGoals);
+          } else {
+            setTodayGoals({
+              newEntries: 0,
+              auUQPoints: 0,
+              serpa: 0,
+              saison: 0,
+              souhan: 0,
+            });
           }
         }
       }
@@ -122,7 +124,7 @@ export default function Home() {
       }
     };
 
-    if (userId) {
+    if (userId && todayGoals !== null) { // `todayGoals`がnullでないことを確認
       saveTodayGoalsToFirebase(todayGoals);
     }
   }, [todayGoals, userId]);
@@ -340,7 +342,7 @@ export default function Home() {
     }
   };
 
-  if (loading) {
+  if (loading || todayGoals === null) { // `todayGoals`が読み込まれるまでローディング
     return <Loader />;
   }
 
