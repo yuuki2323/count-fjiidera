@@ -79,6 +79,7 @@ export default function Home() {
       const querySnapshot = await getDocs(collection(db, 'users'));
       querySnapshot.forEach((doc) => {
         const data = doc.data();
+        console.log('Fetched user data:', data); // ログを追加
         setInitialGoals(data.initialGoals);
         setCurrentGoals(data.currentGoals);
         setEditValues(data.currentGoals); // initialize edit values
@@ -98,6 +99,7 @@ export default function Home() {
         const userDoc = await getDoc(doc(db, 'users', userId));
         if (userDoc.exists()) {
           const data = userDoc.data();
+          console.log('Fetched todayGoals from Firebase:', data.todayGoals); // ログを追加
           if (data.todayGoals) {
             setTodayGoals(data.todayGoals);
           }
@@ -115,6 +117,7 @@ export default function Home() {
     const saveTodayGoalsToFirebase = async (newTodayGoals) => {
       if (userId) {
         const userDoc = doc(db, 'users', userId);
+        console.log('Saving todayGoals to Firebase:', newTodayGoals); // ログを追加
         await updateDoc(userDoc, { todayGoals: newTodayGoals });
       }
     };

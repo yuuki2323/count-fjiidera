@@ -12,6 +12,7 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 export async function GET(req) {
+  console.log('resetTodayGoals endpoint called'); // ログを追加
   if (req.headers.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
